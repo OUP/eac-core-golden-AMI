@@ -1,0 +1,54 @@
+Parameters:
+  SourceBucket:
+    Type: String
+  VPCSubnetIDs:
+    Type: CommaDelimitedList
+  VPCSecurityGroupIDs:
+    Type: CommaDelimitedList
+  LambdaName:
+    Type: String
+Resources:
+  InspectorRunExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:*"
+                  - "ec2:*"
+                  - "inspector:*"
+                  - "codepipeline:PutJobSuccessResult"
+                  - "codepipeline:PutJobFailureResult"
+                  - "ssm:GetParameter"
+
+                Resource: '*'
+          PolicyName: InspectorRunExecutionPolicy
+  InspectorRun:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref 'SourceBucket'
+        S3Key: InspectorRun.zip
+      VpcConfig:
+        SecurityGroupIds: !Ref 'VPCSecurityGroupIDs'
+        SubnetIds: !Ref 'VPCSubnetIDs'
+      Description: Lambda for Inspector Execution
+      FunctionName: !Ref LambdaName
+      Handler: InspectorRun.lambda_handler
+      MemorySize: 256
+      Role: !GetAtt 'InspectorRunExecutionRole.Arn'
+      Runtime: python3.7
+      Timeout: 300

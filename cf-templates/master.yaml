@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Codebuild application stack
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: 1. General
+        Parameters:
+          - Project         
+          - Environment
+      - Label:
+          default: 2. Upstream
+        Parameters:
+          - UpstreamStack
+      - Label:
+          default: 3. Codebuild Details
+        Parameters:
+          - CodeBuildEnvironment
+          - CodeBuildGitRepository
+          - CodeBuildGitRepositoryOwner
+          - CodeBuildGitAuthToken
+          - CodeBuildGitBranch
+          - PipelineName
+          - InspectorLambdaName
+          - SourceBucket
+
+Parameters:
+  ## General
+  SourceBucket:
+    Type: String
+    Description: S3 bucket name where CF templates are stored
+  Project:
+    Type: String
+    Description: Name of the Project
+  UpstreamStack:
+    Type: String
+    Description: Name of the common cloudformation component stack 
+  Environment:
+    Type: String
+    Description: Name of Environment - will be used as tags and in name values
+  CodeBuildEnvironment:
+    Type: String
+    Description: Code build environment type
+    Default: "amazonlinux2-x86_64-standard:2.0"
+  CodeBuildGitRepository:
+    Type: String
+    Description: Git Repository to get code from
+  CodeBuildGitBranch:
+    Type: String
+    Description: Branch to use for git Repository
+    Default: "develop"
+  CodeBuildGitRepositoryOwner:
+    Type: String
+    Description: Owner of the git Repository
+    Default: "OUP"
+  CodeBuildGitAuthToken:
+    Type: String
+    Description: Github authentication Token
+  PipelineName:
+    Type: String
+    Description: Name of the codebuild Pipeline
+    Default: "GoldenAMI-Pipeline"
+  InspectorLambdaName:
+    Type: String
+    Description: Name of the inspector lambda
+    Default: "InspectorRun"
+
+Resources:
+  InspectorLambdaStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${SourceBucket}.s3.amazonaws.com/${PipelineName}/lambda.yml'
+      TimeoutInMinutes: 30
+      Parameters:
+        SourceBucket: !Ref SourceBucket
+        VPCSubnetIDs: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/SubnetPrivA:1}}'
+        VPCSecurityGroupIDs: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/DefaultSG:1}}'
+        LambdaName: !Ref InspectorLambdaName
+  PipelineStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${SourceBucket}.s3.amazonaws.com/${PipelineName}/pipeline.yml'
+      TimeoutInMinutes: 30
+      Parameters:        
+        BuilderVPC: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/VPC:1}}'
+        BuilderSecurityGroup: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/DefaultSG:1}}'
+        CodeBuildPublicSubnet: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/SubnetPrivA:1}}'
+        PipelineName: !Ref PipelineName
+        CodeBuildInspectorLambda: !Ref InspectorLambdaName
+        CodeBuildEnvironment: !Ref CodeBuildEnvironment
+        CodeBuildGitRepository: !Ref CodeBuildGitRepository
+        CodeBuildGitBranch: !Ref CodeBuildGitBranch
+        CodeBuildGitRepositoryOwner: !Ref CodeBuildGitRepositoryOwner
+        CodeBuildGitAuthToken: !Ref CodeBuildGitAuthToken
+        CodeBuildInspectorTemplate: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorTemplate:1}}'
+        CodeBuildInspectorTarget: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorTarget:1}}'
+        CodeBuildInspectorTopic: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorTopic:1}}'
+        InspectorSNSNotification: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorNotification:1}}'
+        Environment: !Ref Environment
+        Project: !Ref Project
+        UpstreamStack: !Ref UpstreamStack
+        SecondarySourceBucket: !Ref SourceBucket

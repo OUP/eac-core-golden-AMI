@@ -1,0 +1,15 @@
+version: 0.1
+phases:
+  build:
+    commands:
+      - cd 'ami-build'
+      - test -s ami_id.txt || exit 1
+      - aws ssm put-parameter --type 'String' --name "/${PROJECT}-${ENVIRONMENT}/${PIPELINENAME}" --value $(head -n 1 ami_id.txt) --overwrite
+      - sed -i.bak "s/<<AMI-NAME>>/${PROJECT}-${ENVIRONMENT}-${PIPELINENAME}-/g" ami_builder_event.json
+      - sed -i.bak "s/<<AMI-ID>>/$(cat ami_id.txt)/g" ami_builder_event.json
+      - aws events put-events --entries file://ami_builder_event.json
+      - cat ami_builder_event.json
+      - echo "build completed on `date`"
+artifacts:
+  files:
+    - '**/*'

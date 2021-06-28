@@ -1,0 +1,53 @@
+version: 0.1
+
+phases:
+  pre_build:
+    commands:
+      - cd 'ami-build'
+      - echo "Installing OS Updates"
+      - yum update -y 
+      - echo "Installing Java 8"
+      - yum install java-1.8.0-openjdk -y
+      - echo "Installing Tomcat Files"
+      - curl -o tomcat.zip https://downloads.apache.org/tomcat/tomcat-9/v9.0.48/bin/apache-tomcat-9.0.48.zip && unzip
+      - echo "Installing Packer"
+      - curl -o packer.zip https://releases.hashicorp.com/packer/1.4.0/packer_1.4.0_linux_amd64.zip && unzip packer.zip
+      - echo "Validating Packer template"
+      - ./packer validate packer.json
+  build:
+    commands:
+      - echo "Configuring Tomcat"
+      - rm tomcat.zip -rf
+      - mv apache-tomcat-9.0.48 /opt/tomcat9 && chmod +x /opt/tomcat9/bin/*.sh
+      - useradd -r tomcat && chown -R tomcat:tomcat /opt/tomcat9
+      - |
+        tee /etc/systemd/system/tomcat.service<<EOF
+        [Unit]
+        Description=Tomcat Server
+        After=syslog.target network.target
+        [Service]
+        Type=forking
+        User=tomcat
+        Group=tomcat
+        Environment=CATALINA_HOME=/opt/tomcat9
+        Environment=CATALINA_BASE=/opt/tomcat9
+        Environment=CATALINA_PID=/opt/tomcat9/temp/tomcat.pid
+        ExecStart=/opt/tomcat9/bin/catalina.sh start
+        ExecStop=/opt/tomcat9/bin/catalina.sh stop
+        RestartSec=12
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+      - echo "Running Packer Build"
+      - ./packer build -color=false packer.json | tee build.log
+  post_build:
+    commands:
+      - egrep "${AWS_REGION}\:\sami\-" build.log | cut -d' ' -f2 > ami_id.txt
+      # Packer doesn't return non-zero status; we must do that if Packer build failed
+      - test -s ami_id.txt || exit 1
+      - echo "build completed on `date`"
+      - aws ssm put-parameter --type 'String' --name "/${UPSTREAMSTACK}-${ENVIRONMENT}/InspectorPrecheckAMI-${PIPELINENAME}" --value $(head -n 1 ami_id.txt) --overwrite
+artifacts:
+  files:
+    - '**/*'

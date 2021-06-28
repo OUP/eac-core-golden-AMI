@@ -1,0 +1,425 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CodePipeline & CodeBuild Stack
+
+Parameters:
+  PipelineName:
+      Type: String
+      Default: GoldenAMI
+      Description: Name for the AMI pipeline
+  Project:
+      Type: String
+      Description: Name of Project
+  UpstreamStack:
+      Type: String
+      Description: Name of the common cloudformation stack
+  SecondarySourceBucket:
+      Type: String
+      Description: "Secondary Source bucket for artifacts"
+  CodeBuildEnvironment:
+    Type: String
+    Default: "amazonlinux2-x86_64-standard:2.0"
+  InspectorSNSNotification:
+      Type: String
+      Description: Inspector SNS Notification Topic
+  BuilderVPC:
+      Type: AWS::EC2::VPC::Id
+      Description: VPC ID that AMI Builder will use to launch temporary resource
+  CodeBuildPublicSubnet:
+      Type: AWS::EC2::Subnet::Id
+      Description: Public Subnet ID that AMI Builder will use to launch temporary resource
+  BuilderSecurityGroup:
+      Type: List<AWS::EC2::SecurityGroup::Id>
+      Description: SecurityGroup for amibuild
+  Environment:
+      Type: String
+      Description: Name of the Environment
+  CodeBuildGitRepository:
+      Type: String
+      Description: Git Repository to use
+  CodeBuildGitBranch:
+      Type: String
+      Description: Git Branch to use
+  CodeBuildGitRepositoryOwner:
+      Type: String
+      Description: Owner of the git repository
+  CodeBuildGitAuthToken:
+      Type: String
+      Description: Git OAUTH Token
+  CodeBuildInspectorTemplate:
+      Type: String
+      Description: ARN of Inspector Template
+  CodeBuildInspectorTarget:
+      Type: String
+      Description: ARN of Inspector Target
+  CodeBuildInspectorLambda:
+      Type: String
+      Description: Inspector Lambda
+  CodeBuildInspectorTopic:
+      Type: String
+      Description: Inspector Topic
+
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - 
+        Label: 
+          default: "Pipeline Name"
+        Parameters: 
+          - PipelineName
+          - Project
+      - 
+        Label: 
+          default: "Packer - Temporary Resources"
+        Parameters: 
+          - BuilderVPC
+          - CodeBuildPublicSubnet
+      - 
+        Label: 
+          default: "Packer - CodeBuild environment"
+        Parameters: 
+          - CodeBuildEnvironment  
+      -
+        Label:
+          default: "Git Repository Details"
+        Parameters:
+          - CodeBuildGitRepository
+          - CodeBuildGitBranch
+          - CodeBuildGitRepositoryOwner
+          - CodeBuildGitAuthToken
+      -
+        Label:
+          Default: "Inspector Configuration"
+        Parameters:
+          - CodeBuildInspectorTemplate
+          - CodeBuildInspectorLambda
+          - InspectorSNSNotification
+    ParameterLabels:
+      PipelineName:
+        default: "Pipeline name?"
+      BuilderVPC: 
+        default: "Which VPC should I use?"
+      BuilderSecurityGroup:
+        default: "Which security group should I use?"
+      CodeBuildPublicSubnet: 
+        default: "Which Public Subnet should I use?"
+      CodeBuildEnvironment: 
+        default: "Should I use a different Docker Image?"
+
+
+
+
+Resources:
+  # S3 Bucket that CodePipeline will use for it's artifacts
+  BuildArtifactsBucket:
+    Type: "AWS::S3::Bucket"
+
+  # Role that will be used by CloudFormation during deployment
+  CloudFormationRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: /
+      RoleName: !Sub '${Project}-${Environment}-${PipelineName}-CloudformationRole'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "cloudformation.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        -
+          PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-PipelineAccess'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "iam:*"
+                Resource:
+                  - "*"
+              -
+                Effect: "Allow"
+                Action: 
+                  - "ec2:*"
+                Resource:
+                  - "*"
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:*"
+                Resource:
+                  - "*"
+              -
+                Effect: "Allow"
+                Action: 
+                  - "route53:*"
+                Resource:
+                  - "*"
+
+  # Role that will be used by CodeBuild during executions
+  CodeBuildServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+        Path: '/managed/'
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/PowerUserAccess'
+        AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - 
+                Action: 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service:
+                    - codebuild.amazonaws.com
+        Policies:
+            - 
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-CodeBuild'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - 
+                    Sid: "CodeBuildToCWL"
+                    Effect: Allow
+                    Action:
+                      - 'logs:CreateLogGroup'
+                      - 'logs:CreateLogStream'
+                      - 'logs:PutLogEvents'
+                    Resource:
+                      - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}_build'
+                      - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}_build:*'
+                  - 
+                    Sid: "CodeBuildToS3ArtifactRepo"
+                    Effect: Allow
+                    Action: 
+                      - 's3:GetObject'
+                      - 's3:GetObjectVersion'
+                      - 's3:PutObject'
+                    Resource: !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
+
+  # Role used by CodePipeline during executions
+  PipelineExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+        Path: '/managed/'      
+        AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - 
+                Action: 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service: 
+                    - codepipeline.amazonaws.com
+        Policies:
+            - 
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-PassCodebuild'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - 
+                      Action: 'iam:PassRole'
+                      Effect: Allow
+                      Resource: !GetAtt CodeBuildServiceRole.Arn
+            -
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-PassCloudformation'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                      Action: 'iam:PassRole'
+                      Effect: Allow
+                      Resource: !GetAtt CloudFormationRole.Arn
+            -
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-S3Policy'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - 
+                      Action:
+                        - 's3:GetObject'
+                        - 's3:GetObjectVersion'
+                        - 's3:GetBucketVersioning'
+                        - 's3:PutObject'
+                      Effect: Allow
+                      Resource: 
+                        - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}'
+                        - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
+            -
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-BuildPolicy'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - 
+                      Action:
+                        - 'codebuild:StartBuild'
+                        - 'codebuild:StopBuild'
+                        - 'codebuild:BatchGetBuilds'
+                        - 'cloudformation:DescribeStacks'
+                        - 'cloudformation:DescribeChangeSet'
+                        - 'cloudformation:CreateChangeSet'
+                        - 'cloudformation:ExecuteChangeSet'
+                        - 'cloudformation:DeleteChangeSet'
+                        - 'lambda:InvokeFunction'
+                        - 'sns:Publish'
+                      Effect: Allow
+                      Resource: '*'
+
+  # CodeBuild project that builds/configures the AMI
+  AMIBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${PipelineName}_amibuild'
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment: 
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: !Sub 'aws/codebuild/${CodeBuildEnvironment}'
+        EnvironmentVariables:
+        - Name: BUILD_OUTPUT_BUCKET
+          Value: !Ref BuildArtifactsBucket
+        - Name: BUILD_VPC_ID
+          Value: !Ref BuilderVPC
+        - Name: BUILD_SUBNET_ID
+          Value: !Ref CodeBuildPublicSubnet
+        - Name: PROJECT
+          Value: !Ref Project
+        - Name: ENVIRONMENT
+          Value: !Ref Environment
+        - Name: UPSTREAMSTACK
+          Value: !Ref UpstreamStack
+        - Name: PIPELINENAME
+          Value: !Ref PipelineName
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      VpcConfig:
+        SecurityGroupIds: !Ref BuilderSecurityGroup
+        Subnets:
+          - !Ref CodeBuildPublicSubnet
+        VpcId: !Ref BuilderVPC
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+
+  # CodeBuild project that deploys the AMI ID to Parameter Store
+  AMIDeploy:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${PipelineName}_amideploy'
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment: 
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: !Sub 'aws/codebuild/${CodeBuildEnvironment}'
+        EnvironmentVariables:
+        - Name: BUILD_OUTPUT_BUCKET
+          Value: !Ref BuildArtifactsBucket
+        - Name: BUILD_VPC_ID
+          Value: !Ref BuilderVPC
+        - Name: BUILD_SUBNET_ID
+          Value: !Ref CodeBuildPublicSubnet
+        - Name: PROJECT
+          Value: !Ref Project
+        - Name: ENVIRONMENT
+          Value: !Ref Environment
+        - Name: UPSTREAMSTACK
+          Value: !Ref UpstreamStack
+        - Name: PIPELINENAME
+          Value: !Ref PipelineName
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      VpcConfig:
+        SecurityGroupIds: !Ref BuilderSecurityGroup
+        Subnets:
+          - !Ref CodeBuildPublicSubnet
+        VpcId: !Ref BuilderVPC
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec_deploy.yml
+
+
+  GoldenAMIPipeline:
+    Type: "AWS::CodePipeline::Pipeline"
+    Properties:
+      ArtifactStore:
+        Location: !Ref BuildArtifactsBucket
+        Type: S3
+      Name: !Sub ${PipelineName}_goldAMI
+      RoleArn: !GetAtt PipelineExecutionRole.Arn
+      Stages:
+        -
+          Name: Source
+          Actions:
+            -
+              Name: GitHubRepo
+              ActionTypeId:
+                Category: Source
+                Owner: "ThirdParty"
+                Provider: "GitHub"
+                Version: '1'
+              Configuration:
+                Owner: !Ref CodeBuildGitRepositoryOwner
+                Repo: !Ref CodeBuildGitRepository
+                Branch: !Ref CodeBuildGitBranch
+                OAuthToken: !Ref CodeBuildGitAuthToken
+                PollForSourceChanges: true
+              OutputArtifacts:
+                - Name: SourceZip
+              RunOrder: 1
+        - 
+          Name: Build
+          Actions:
+            - 
+              Name: AMIBuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref AMIBuild
+              InputArtifacts:
+                - Name: SourceZip
+              OutputArtifacts:
+                - Name: BuiltZip
+        - 
+          Name: Scan
+          Actions:
+            -
+              Name: SecurityScan
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Version: '1'
+                Provider: Lambda
+              Configuration:
+                FunctionName: !Ref CodeBuildInspectorLambda
+                UserParameters: !Sub |
+                  {
+                    "amiIdLocation": "/${UpstreamStack}-${Environment}/InspectorPrecheckAMI-${PipelineName}",
+                    "subnet": "${CodeBuildPublicSubnet}",
+                    "assessmentTemplate": "${CodeBuildInspectorTemplate}",
+                    "assessmentTarget": "${CodeBuildInspectorTarget}",
+                    "assessmentTopic": "${CodeBuildInspectorTopic}"
+                  }
+        - 
+          Name: Deploy
+          Actions:
+            - 
+              Name: AMIDeploy
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref AMIDeploy
+              InputArtifacts:
+                - Name: BuiltZip
+              OutputArtifacts:
+                - Name: DeployZip
