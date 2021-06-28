@@ -63,7 +63,7 @@ Parameters:
   InspectorLambdaName:
     Type: String
     Description: Name of the inspector lambda
-    Default: "InspectorRun"
+    Default: "AmazonInspectorRun"
 
 Resources:
   InspectorLambdaStack:
