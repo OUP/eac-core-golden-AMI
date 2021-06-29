@@ -8,7 +8,7 @@ Please follow the below instructions prior to deployment:
 - Create a Source S3 bucket (this will be used to hold the files used in the deployment)
 - Create a prefix in the bucket with the same name as the pipeline will be called
 - Upload the three Cloudformation templates into the created bucket/prefix
-- Move the InspectorRun.py file to a zip folder and upload this to the S3 bucket/pipeline prefix
+- Move the InspectorRun.py file to a zip folder and upload this to the ROOT of the S3 bucket
 
 ### SSM Parameters 
 - Check the SSM Parameter store and make sure it already has the parameters created that the stack will use
@@ -27,3 +27,16 @@ Please follow the below instructions prior to deployment:
 - In the specify a template section paste the S3 URL of the master.yml template > Next
 - Enter all of the parameters with the data gathered in the Requirements section > Next > Next
 - Accept the IAM Capability warnings and click 'Create Stack'
+
+## Sample Parameters for EAC-Dev New Account
+Stack Name: EAC-Core-GoldenAMI-Pipeline
+Project: eac-core
+Environment: common
+UpstreamStack: EAC-CommonComponents
+CodeBuildEnvironment: Default
+Repo: eac-core-golden-AMI
+repo owner: OUP
+AuthToken: GenerateYourOwnAuthToken
+Branch: master
+PipelineName: eac-core-pipeline
+SourceBucket: eac-core-golden-ami-pipeline
