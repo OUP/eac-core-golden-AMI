@@ -14,6 +14,8 @@ phases:
       - curl -o packer.zip https://releases.hashicorp.com/packer/1.4.0/packer_1.4.0_linux_amd64.zip && unzip packer.zip
       - ls -lh # Temp
       - pwd
+      - cd 'ami-build'
+      - pwd
       - echo "Validating Packer template"
       - ./packer validate packer.json
   build:
