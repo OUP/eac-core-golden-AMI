@@ -4,10 +4,10 @@ phases:
   pre_build:
     commands:
       - cd 'ami-build'
-      - echo "Installing OS Updates"
-      - yum update -y 
-      - echo "Installing Java 8"
-      - yum install java-1.8.0-openjdk -y
+      #- echo "Installing OS Updates"
+      #- yum update -y 
+      #- echo "Installing Java 8"
+      #- yum install java-1.8.0-openjdk -y
       - echo "Installing Tomcat Files"
       - curl -o tomcat.zip https://downloads.apache.org/tomcat/tomcat-9/v9.0.48/bin/apache-tomcat-9.0.48.zip && unzip
       - echo "Installing Packer"
@@ -16,6 +16,8 @@ phases:
       - pwd
       - echo "Validating Packer template"
       - ./packer validate packer.json
+      - cd /
+      - ls -lh
   build:
     commands:
       - echo "Configuring Tomcat"
