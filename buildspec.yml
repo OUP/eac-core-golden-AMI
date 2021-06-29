@@ -39,6 +39,9 @@ phases:
         [Install]
         WantedBy=multi-user.target
         EOF
+      - java -version
+      - ls -lh /etc/systemd/system/
+      - ls -lh /opt/
       - echo "Running Packer Build"
       - ./packer build -color=false packer.json | tee build.log
   post_build:

@@ -29,11 +29,11 @@ Resources:
                 Action:
                   - "logs:*"
                   - "ec2:*"
+                  - "sns:*"
                   - "inspector:*"
                   - "codepipeline:PutJobSuccessResult"
                   - "codepipeline:PutJobFailureResult"
                   - "ssm:GetParameter"
-
                 Resource: '*'
           PolicyName: AmazonInspectorRunExecutionPolicy
   InspectorRun:
