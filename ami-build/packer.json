@@ -62,13 +62,13 @@
     },
     {
       "inline": [
-        "sudo mv /tmp/tomcat9/* /opt/tomcat9"
+        "sudo mkdir /opt/tomcat9 && sudo mv /tmp/tomcat9/* /opt/tomcat9"
       ],
       "type": "shell"
     },
     {
       "inline": [
-        "sudo useradd -r tomcat && chown -R tomcat:tomcat /opt/tomcat9"
+        "sudo useradd -r tomcat && sudo chown -R tomcat:tomcat /opt/tomcat9"
       ],
       "type": "shell"
     },
