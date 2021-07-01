@@ -4,10 +4,6 @@ phases:
   pre_build:
     commands:
       - cd 'ami-build'
-      - echo "Installing OS Updates"
-      - yum update -y 
-      - echo "Installing Java 8"
-      - yum install java-1.8.0-openjdk -y
       - echo "Installing Tomcat Files"
       - curl -o tomcat.zip https://downloads.apache.org/tomcat/tomcat-9/v9.0.48/bin/apache-tomcat-9.0.48.zip && unzip tomcat.zip
       - echo "Installing Packer"
@@ -17,28 +13,7 @@ phases:
   build:
     commands:
       - echo "Configuring Tomcat"
-      - rm tomcat.zip -rf
-      - mv apache-tomcat-9.0.48 /opt/tomcat9 && chmod +x /opt/tomcat9/bin/*.sh
-      - useradd -r tomcat && chown -R tomcat:tomcat /opt/tomcat9
-      - |
-        tee /etc/systemd/system/tomcat.service<<EOF
-        [Unit]
-        Description=Tomcat Server
-        After=syslog.target network.target
-        [Service]
-        Type=forking
-        User=tomcat
-        Group=tomcat
-        Environment=CATALINA_HOME=/opt/tomcat9
-        Environment=CATALINA_BASE=/opt/tomcat9
-        Environment=CATALINA_PID=/opt/tomcat9/temp/tomcat.pid
-        ExecStart=/opt/tomcat9/bin/catalina.sh start
-        ExecStop=/opt/tomcat9/bin/catalina.sh stop
-        RestartSec=12
-        Restart=always
-        [Install]
-        WantedBy=multi-user.target
-        EOF
+      - mv apache-tomcat-9.0.48 /tmp/tomcat9 && chmod +x /tmp/tomcat9/bin/*.sh
       - echo "Running Packer Build"
       - ./packer build -color=false packer.json | tee build.log
   post_build:
