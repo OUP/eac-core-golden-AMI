@@ -12,7 +12,7 @@ phases:
       - ./packer validate packer.json
   build:
     commands:
-      - echo "Configuring Tomcat"
+      - echo "Moving Tomcat files to temp location"
       - mv apache-tomcat-9.0.48 /tmp/tomcat9 && chmod +x /tmp/tomcat9/bin/*.sh
       - echo "Running Packer Build"
       - ./packer build -color=false packer.json | tee build.log

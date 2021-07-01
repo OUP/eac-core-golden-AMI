@@ -56,9 +56,15 @@
       "type": "shell"
     },
     {
-      "destination": "/opt/",
-      "source": "/tmp/",
+      "destination": "/tmp/tomcat9", 
+      "source": "/tmp/tomcat9",
       "type": "file"
+    },
+    {
+      "inline": [
+        "sudo mv /tmp/tomcat9/* /opt/tomcat9"
+      ],
+      "type": "shell"
     },
     {
       "inline": [
