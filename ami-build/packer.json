@@ -57,7 +57,7 @@
     },
     {
       "destination": "/opt/",
-      "source": "/tmp/*",
+      "source": "/tmp/",
       "type": "file"
     },
     {
