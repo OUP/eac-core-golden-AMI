@@ -45,13 +45,13 @@
     },
     {
       "inline": [
-        "yum install java-1.8.0-openjdk -y"
+        "sudo yum install java-1.8.0-openjdk -y"
       ],
       "type": "shell"
     },
     {
       "inline": [
-        "tee /etc/systemd/system/tomcat.service<<EOF\n[Unit]\nDescription=Tomcat Server\nAfter=syslog.target network.target\n[Service]\nType=forking\nUser=tomcat\nGroup=tomcat\nEnvironment=CATALINA_HOME=/opt/tomcat9\nEnvironment=CATALINA_BASE=/opt/tomcat9\nEnvironment=CATALINA_PID=/opt/tomcat9/temp/tomcat.pid\nExecStart=/opt/tomcat9/bin/catalina.sh start\nExecStop=/opt/tomcat9/bin/catalina.sh stop\nRestartSec=12\nRestart=always\n[Install]\nWantedBy=multi-user.target\nEOF"
+        "sudo tee /etc/systemd/system/tomcat.service<<EOF\n[Unit]\nDescription=Tomcat Server\nAfter=syslog.target network.target\n[Service]\nType=forking\nUser=tomcat\nGroup=tomcat\nEnvironment=CATALINA_HOME=/opt/tomcat9\nEnvironment=CATALINA_BASE=/opt/tomcat9\nEnvironment=CATALINA_PID=/opt/tomcat9/temp/tomcat.pid\nExecStart=/opt/tomcat9/bin/catalina.sh start\nExecStop=/opt/tomcat9/bin/catalina.sh stop\nRestartSec=12\nRestart=always\n[Install]\nWantedBy=multi-user.target\nEOF"
       ],
       "type": "shell"
     },
@@ -62,13 +62,7 @@
     },
     {
       "inline": [
-        "chmod +x /opt/tomcat9/bin/*.sh"
-      ],
-      "type": "shell"
-    },
-    {
-      "inline": [
-        "useradd -r tomcat && chown -R tomcat:tomcat /opt/tomcat9"
+        "sudo useradd -r tomcat && chown -R tomcat:tomcat /opt/tomcat9"
       ],
       "type": "shell"
     },
