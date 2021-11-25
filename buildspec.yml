@@ -6,7 +6,7 @@ phases:
       - cd 'ami-build'
       - echo "Installing Tomcat Files"
       - curl -o tomcat.zip https://downloads.apache.org/tomcat/tomcat-9/v9.0.55/bin/apache-tomcat-9.0.55.zip && unzip tomcat.zip
-      - mv apache-tomcat-9.0.48 /tmp/tomcat9 && chmod +x /tmp/tomcat9/bin/*.sh
+      - mv apache-tomcat-9.0.55 /tmp/tomcat9 && chmod +x /tmp/tomcat9/bin/*.sh
       - echo "Installing Packer"
       - curl -o packer.zip https://releases.hashicorp.com/packer/1.4.0/packer_1.4.0_linux_amd64.zip && unzip packer.zip
       - echo "Validating Packer template"
