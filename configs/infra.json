@@ -1,0 +1,15 @@
+{
+    "Parameters" : {
+    "Project": "eac-core",
+    "Environment": "infra",
+    "UpstreamStack": "EAC-CommonComponents-common",
+    "CodeBuildEnvironment": "amazonlinux2-x86_64-standard:2.0",
+    "CodeBuildGitRepository": "eac-core-golden-AMI",
+    "CodeBuildGitRepositoryOwner": "OUP",
+    "CodeBuildGitAuthToken": "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",
+    "CodeBuildGitBranch": "master",
+    "PipelineName": "eac-core-golden-ami",
+    "InspectorLambdaName": "AmazonInspectorRun",
+    "SourceBucket": "eac-core-golden-ami-pipeline"
+    }
+}

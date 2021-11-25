@@ -12,15 +12,9 @@ Parameters:
   UpstreamStack:
       Type: String
       Description: Name of the common cloudformation stack
-  SecondarySourceBucket:
-      Type: String
-      Description: "Secondary Source bucket for artifacts"
   CodeBuildEnvironment:
     Type: String
     Default: "amazonlinux2-x86_64-standard:2.0"
-  InspectorSNSNotification:
-      Type: String
-      Description: Inspector SNS Notification Topic
   BuilderVPC:
       Type: AWS::EC2::VPC::Id
       Description: VPC ID that AMI Builder will use to launch temporary resource
@@ -45,6 +39,7 @@ Parameters:
   CodeBuildGitAuthToken:
       Type: String
       Description: Git OAUTH Token
+      NoEcho: True
   CodeBuildInspectorTemplate:
       Type: String
       Description: ARN of Inspector Template
@@ -93,7 +88,6 @@ Metadata:
         Parameters:
           - CodeBuildInspectorTemplate
           - CodeBuildInspectorLambda
-          - InspectorSNSNotification
     ParameterLabels:
       PipelineName:
         default: "Pipeline name?"
@@ -349,7 +343,7 @@ Resources:
       ArtifactStore:
         Location: !Ref BuildArtifactsBucket
         Type: S3
-      Name: !Sub ${PipelineName}_goldAMI
+      Name: !Ref PipelineName
       RoleArn: !GetAtt PipelineExecutionRole.Arn
       Stages:
         -
@@ -401,7 +395,7 @@ Resources:
                 FunctionName: !Ref CodeBuildInspectorLambda
                 UserParameters: !Sub |
                   {
-                    "amiIdLocation": "/${UpstreamStack}-${Environment}/InspectorPrecheckAMI-${PipelineName}",
+                    "amiIdLocation": "/${UpstreamStack}/${Environment}/InspectorPrecheckAMI-${PipelineName}",
                     "subnet": "${CodeBuildPublicSubnet}",
                     "assessmentTemplate": "${CodeBuildInspectorTemplate}",
                     "assessmentTarget": "${CodeBuildInspectorTarget}",

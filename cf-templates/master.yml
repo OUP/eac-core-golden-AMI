@@ -34,10 +34,18 @@ Parameters:
     Description: Name of the Project
   UpstreamStack:
     Type: String
-    Description: Name of the common cloudformation component stack 
+    Description: Name of the common CloudFormation component stack 
   Environment:
     Type: String
     Description: Name of Environment - will be used as tags and in name values
+    AllowedValues:
+      - infra
+      - dev
+      - test
+      - uat
+      - perf
+      - preprod
+      - prod
   CodeBuildEnvironment:
     Type: String
     Description: Code build environment type
@@ -56,6 +64,7 @@ Parameters:
   CodeBuildGitAuthToken:
     Type: String
     Description: Github authentication Token
+    NoEcho: True
   PipelineName:
     Type: String
     Description: Name of the codebuild Pipeline
@@ -73,8 +82,8 @@ Resources:
       TimeoutInMinutes: 30
       Parameters:
         SourceBucket: !Ref SourceBucket
-        VPCSubnetIDs: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/SubnetPrivA:1}}'
-        VPCSecurityGroupIDs: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/DefaultSG:1}}'
+        VPCSubnetIDs: !Sub '{{resolve:ssm:/${UpstreamStack}/SubnetPrivA:1}}'
+        VPCSecurityGroupIDs: !Sub '{{resolve:ssm:/${UpstreamStack}/DefaultSG:1}}'
         LambdaName: !Ref InspectorLambdaName
   PipelineStack:
     Type: AWS::CloudFormation::Stack
@@ -82,9 +91,9 @@ Resources:
       TemplateURL: !Sub 'https://${SourceBucket}.s3.amazonaws.com/${PipelineName}/pipeline.yml'
       TimeoutInMinutes: 30
       Parameters:        
-        BuilderVPC: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/VPC:1}}'
-        BuilderSecurityGroup: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/DefaultSG:1}}'
-        CodeBuildPublicSubnet: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/SubnetPrivA:1}}'
+        BuilderVPC: !Sub '{{resolve:ssm:/${UpstreamStack}/VPC:1}}'
+        BuilderSecurityGroup: !Sub '{{resolve:ssm:/${UpstreamStack}/DefaultSG:1}}'
+        CodeBuildPublicSubnet: !Sub '{{resolve:ssm:/${UpstreamStack}/SubnetPrivA:1}}'
         PipelineName: !Ref PipelineName
         CodeBuildInspectorLambda: !Ref InspectorLambdaName
         CodeBuildEnvironment: !Ref CodeBuildEnvironment
@@ -92,11 +101,9 @@ Resources:
         CodeBuildGitBranch: !Ref CodeBuildGitBranch
         CodeBuildGitRepositoryOwner: !Ref CodeBuildGitRepositoryOwner
         CodeBuildGitAuthToken: !Ref CodeBuildGitAuthToken
-        CodeBuildInspectorTemplate: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorTemplate:1}}'
-        CodeBuildInspectorTarget: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorTarget:1}}'
-        CodeBuildInspectorTopic: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorTopic:1}}'
-        InspectorSNSNotification: !Sub '{{resolve:ssm:/${UpstreamStack}-${Environment}/InspectorNotification:1}}'
+        CodeBuildInspectorTemplate: !Sub '{{resolve:ssm:/${UpstreamStack}/InspectorTemplate:1}}'
+        CodeBuildInspectorTarget: !Sub '{{resolve:ssm:/${UpstreamStack}/InspectorTarget:1}}'
+        CodeBuildInspectorTopic: !Sub '{{resolve:ssm:/${UpstreamStack}/InspectorTopic:1}}'
         Environment: !Ref Environment
         Project: !Ref Project
         UpstreamStack: !Ref UpstreamStack
-        SecondarySourceBucket: !Ref SourceBucket
