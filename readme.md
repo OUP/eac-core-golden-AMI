@@ -1,3 +1,6 @@
+# Warning
+This is the `infra` branch of this repository. The readme for this branch as been written for the infra environment, if you are working on a different environment, please switch to the correct branch for your retrospective environment.
+
 # Overview
 This repository contains the files & templates that will create a GoldenAMI creation CodePipeline created for OUP EAC, this is part of a two-pipeline deployment process. This pipeline will take a standard Amazon Linux 2 AMI, install software, perform security updates and run an Amazon Inspector Security assessment before finally publishing the AMI ID to AWS SSM Parameter Store.
 
@@ -28,39 +31,16 @@ If any of the pipeline configuration files have been updated, including the buil
 ## CloudFormation Stack Update
 Please follow the below instructions prior to a CloudFormation Stack update of an already deployed version of this pipeline.
 
-- Update the parameter list in the `configs` folder for the retrospective environment with any new or updated parameters
+- Update the parameter list in the `configs/infra.json` folder with any new or updated parameters
 - Upload any CloudFormation template changes to the `cf-templates` folder of this repository
-- Upload the CloudFormation Templates into into the `eac-core-golden-ami` folder of the S3 bucket defined in the SourceBucket parameter of the `/configs/` file for your environment.
+- Upload the CloudFormation Templates into into the `eac-core-golden-ami` folder of the S3 bucket defined in the SourceBucket parameter of the `/configs/infra.json` file.
 - Deploy changes manually through CLI or Console (as there is no pipeline builder pipeline for this project)
 
 ## Lambda Code Update
-If the Lambda code has been updated, please commit the code to the `/ami-build/lambdas/` folder and then add the lambda code file to a zip folder and upload it into the ROOT of the S3 bucket defined in the SourceBucket parameter of the `/configs/` file for your environment.
+If the Lambda code has been updated, please commit the code to the `/ami-build/lambdas/` folder and then add the lambda code file to a zip folder and upload it into the ROOT of the S3 bucket defined in the SourceBucket parameter of the `/configs/infra.json` file.
 
 # Fresh Deployment Procedure/Requirements
-Please follow the below instructions prior to a brand-new deployment of this pipeline. Current CloudFormation deployment parameters are listed in the `configs` folder of this repository. Please ensure these are kept up to date with any parameter changes.
-
-### File Upload
-- Create/locate a Source S3 bucket (this will be used to hold the files used in the deployment)
-- Create a prefix in the bucket with the same name as the pipeline will be called
-- Upload the three Cloudformation templates into the created bucket/prefix
-- Move the `InspectorRun.py` file to a zip folder and upload this to the ROOT of the S3 bucket
-
-### SSM Parameters 
-- Check the SSM Parameter store and make sure it already has the parameters created that the stack will use
-- Note down the Parameter name format and affix as these will need to be input as CF Parameters upon deployment
-    - For example the /EAC-CommonComponents-common/ is used in the Dev account. This will require the following CF Parameter:
-        - UpstreamStack: EAC-CommonComponents-common
-
-### GitHub Parameters
-- Make sure you have the correct GitHub details prior to deployment. You will need
-    - Repository Name, Branch Name, Repository Owner & Authorisation Token (Auth token soon to be removed in place of GitHub app)
-
-
-# Deployment
-- Navigate to CloudFormation and select Create Stack > With new resources (standard)
-- In the specify a template section paste the S3 URL of the master.yml template > Next
-- Enter all of the parameters with the data gathered in the Requirements section > Next > Next
-- Accept the IAM Capability warnings and click 'Create Stack'
+Please follow the steps listed in the master branch of this repository for instructions on how to perform a deployment of this pipeline to a new environment.
 
 # Useful Links
 - [CHQ GDrive Folder](https://drive.google.com/drive/folders/1ZFyiNBvl1q3CWFzWcuzOgRQRKIH3K3ue)
