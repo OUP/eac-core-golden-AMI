@@ -1,3 +1,6 @@
+# Repository Structure
+This pipeline is currently setup in a way where each environment that it is deployted in has it's own branch. If you are making changes to a specific environment or are loking for documentation/procedures for them please switch to the retrospective environment branch. General documentation can be found here in the master.
+
 # Overview
 This repository contains the files & templates that will create a GoldenAMI creation CodePipeline created for OUP EAC, this is part of a two-pipeline deployment process. This pipeline will take a standard Amazon Linux 2 AMI, install software, perform security updates and run an Amazon Inspector Security assessment before finally publishing the AMI ID to AWS SSM Parameter Store.
 
@@ -19,25 +22,18 @@ Below is a brief overview of the pipeline, it's stages and how it interacts with
     - It takes the AMI ID from the Build Stage and publishes it to a final SSM Parameter as well as publishing an event to EventBridge when complete
 
 
-
 # Pipeline Update Procedure
-
-## Pipeline files/config update
-If any of the pipeline configuration files have been updated, including the buildspec's or the packer files commit the changes to the retrospective environment branch and the pipeline will automatically trigger and run with the updated configs.
-
-## CloudFormation Stack Update
-Please follow the below instructions prior to a CloudFormation Stack update of an already deployed version of this pipeline.
-
-- Update the parameter list in the `configs` folder for the retrospective environment with any new or updated parameters
-- Upload any CloudFormation template changes to the `cf-templates` folder of this repository
-- Upload the CloudFormation Templates into into the `eac-core-golden-ami` folder of the S3 bucket defined in the SourceBucket parameter of the `/configs/` file for your environment.
-- Deploy changes manually through CLI or Console (as there is no pipeline builder pipeline for this project)
-
-## Lambda Code Update
-If the Lambda code has been updated, please commit the code to the `/ami-build/lambdas/` folder and then add the lambda code file to a zip folder and upload it into the ROOT of the S3 bucket defined in the SourceBucket parameter of the `/configs/` file for your environment.
+Procedures for updating already deployed versions of this pipeline can be found in the retrospective environment branches.
 
 # Fresh Deployment Procedure/Requirements
 Please follow the below instructions prior to a brand-new deployment of this pipeline. Current CloudFormation deployment parameters are listed in the `configs` folder of this repository. Please ensure these are kept up to date with any parameter changes.
+
+### Documentation
+- Create a new branch in this repository with the branch name being the environment you are deploying to (i.e dev, stage, prod)
+- Copy the files from one of the current environment branches and update as necessary
+- Two files of note which will need updated:
+    - readme.md file
+    - /configs/environment-name.json (environment-name being replaced with your new environment name)
 
 ### File Upload
 - Create/locate a Source S3 bucket (this will be used to hold the files used in the deployment)
@@ -55,8 +51,7 @@ Please follow the below instructions prior to a brand-new deployment of this pip
 - Make sure you have the correct GitHub details prior to deployment. You will need
     - Repository Name, Branch Name, Repository Owner & Authorisation Token (Auth token soon to be removed in place of GitHub app)
 
-
-# Deployment
+### Deployment
 - Navigate to CloudFormation and select Create Stack > With new resources (standard)
 - In the specify a template section paste the S3 URL of the master.yml template > Next
 - Enter all of the parameters with the data gathered in the Requirements section > Next > Next
