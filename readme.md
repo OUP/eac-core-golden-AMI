@@ -2,7 +2,7 @@
 This pipeline is currently setup in a way where each environment that it is deployted in has it's own branch. If you are making changes to a specific environment or are looking for documentation/procedures for them please switch to the retrospective environment branch. General documentation can be found here in the master.
 
 # Overview
-This repository contains the files & templates that will create a GoldenAMI creation CodePipeline created for OUP EAC, this is part of a two-pipeline deployment process. This pipeline will take a standard Amazon Linux 2 AMI, install software, perform security updates and run an Amazon Inspector Security assessment before finally publishing the AMI ID to AWS SSM Parameter Store.
+This repository contains the files & templates that will create a GoldenAMI creation CodePipeline created for OUP EAC, this is the first part of a two-pipeline deployment process. This pipeline will take a standard Amazon Linux 2 AMI, install software, perform security updates and run an Amazon Inspector Security assessment before finally publishing the AMI ID to AWS SSM Parameter Store.
 
 # Pipeline Walkthrough
 Below is a brief overview of the pipeline, it's stages and how it interacts with all the files contained inside this repository.
