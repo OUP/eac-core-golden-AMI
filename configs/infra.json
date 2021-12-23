@@ -4,10 +4,10 @@
     "Environment": "infra",
     "UpstreamStack": "EAC-CommonComponents-common",
     "CodeBuildEnvironment": "amazonlinux2-x86_64-standard:2.0",
-    "CodeBuildGitRepository": "eac-core-golden-AMI",
     "CodeBuildGitRepositoryOwner": "OUP",
-    "CodeBuildGitAuthToken": "YOUR_TOKEN",
-    "CodeBuildGitBranch": "master",
+    "CodeBuildGitRepository": "eac-core-golden-AMI",
+    "CodeStarConnectionARN": "arn:aws:codestar-connections:eu-west-1:637927391752:connection/613f3f2e-9218-4d9c-a03f-49748e88700b",
+    "CodeBuildGitBranch": "infra",
     "PipelineName": "eac-core-golden-ami",
     "InspectorLambdaName": "AmazonInspectorRun",
     "SourceBucket": "eac-core-golden-ami-pipeline"
