@@ -62,7 +62,7 @@
     },
     {
       "inline": [
-        "sudo mkdir /opt/tomcat9 && sudo mv /tmp/tomcat9/* /opt/tomcat9 && mkdir /opt/tomcat9/logs"
+        "sudo mkdir /opt/tomcat9 && sudo mv /tmp/tomcat9/* /opt/tomcat9"
       ],
       "type": "shell"
     },
