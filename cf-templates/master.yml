@@ -1,40 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Codebuild application stack
-Metadata:
-  'AWS::CloudFormation::Interface':
-    ParameterGroups:
-      - Label:
-          default: 1. General
-        Parameters:
-          - Project         
-          - Environment
-      - Label:
-          default: 2. Upstream
-        Parameters:
-          - UpstreamStack
-      - Label:
-          default: 3. Codebuild Details
-        Parameters:
-          - CodeBuildEnvironment
-          - CodeBuildGitRepository
-          - CodeBuildGitRepositoryOwner
-          - CodeBuildGitAuthToken
-          - CodeBuildGitBranch
-          - PipelineName
-          - InspectorLambdaName
-          - SourceBucket
+Description: EAC GoldenAMI Pipeline Master Stack
+
 
 Parameters:
-  ## General
-  SourceBucket:
-    Type: String
-    Description: S3 bucket name where CF templates are stored
+  # General
   Project:
     Type: String
     Description: Name of the Project
-  UpstreamStack:
+  SourceBucket:
     Type: String
-    Description: Name of the common CloudFormation component stack 
+    Description: S3 bucket name where CF templates are stored
   Environment:
     Type: String
     Description: Name of Environment - will be used as tags and in name values
@@ -46,33 +21,66 @@ Parameters:
       - perf
       - preprod
       - prod
-  CodeBuildEnvironment:
+  # Upstream
+  UpstreamStack:
     Type: String
-    Description: Code build environment type
-    Default: "amazonlinux2-x86_64-standard:2.0"
-  CodeBuildGitRepository:
-    Type: String
-    Description: Git Repository to get code from
-  CodeBuildGitBranch:
-    Type: String
-    Description: Branch to use for git Repository
-    Default: "develop"
+    Description: Name of the common CloudFormation component stack 
+  # CodeBuild Details
   CodeBuildGitRepositoryOwner:
     Type: String
     Description: Owner of the git Repository
     Default: "OUP"
-  CodeBuildGitAuthToken:
+  CodeBuildGitRepository:
     Type: String
-    Description: Github authentication Token
-    NoEcho: True
-  PipelineName:
+    Description: Git Repository to get code from
+  CodeStarConnectionARN:
     Type: String
-    Description: Name of the codebuild Pipeline
-    Default: "GoldenAMI-Pipeline"
+    Description: ARN of the CodeStar connection used to connect to GitHub
+  CodeBuildEnvironment:
+    Type: String
+    Description: Code build environment type
+    Default: "amazonlinux2-x86_64-standard:2.0"
+  CodeBuildGitBranch:
+    Type: String
+    Description: Branch to use for git Repository
+    Default: "develop"
   InspectorLambdaName:
     Type: String
     Description: Name of the inspector lambda
     Default: "AmazonInspectorRun"
+  PipelineName:
+    Type: String
+    Description: Name of the codebuild Pipeline
+    Default: "GoldenAMI-Pipeline"
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: 1. General
+        Parameters:
+          - Project         
+          - Environment
+          - SourceBucket
+      - Label:
+          default: 2. Upstream
+        Parameters:
+          - UpstreamStack
+      - Label:
+          default: 3. Codebuild Details
+        Parameters:
+          - CodeBuildGitRepositoryOwner
+          - CodeBuildGitRepository
+          - CodeStarConnectionARN
+          - CodeBuildEnvironment
+          - CodeBuildGitBranch
+          - InspectorLambdaName
+          - PipelineName
+    ParameterLabels:
+      PipelineName:
+        default: "Pipeline name?"
+      CodeBuildEnvironment: 
+        default: "Should I use a different Docker Image?"
 
 Resources:
   InspectorLambdaStack:
@@ -82,28 +90,29 @@ Resources:
       TimeoutInMinutes: 30
       Parameters:
         SourceBucket: !Ref SourceBucket
-        VPCSubnetIDs: !Sub '{{resolve:ssm:/${UpstreamStack}/SubnetPrivA:1}}'
         VPCSecurityGroupIDs: !Sub '{{resolve:ssm:/${UpstreamStack}/DefaultSG:1}}'
+        VPCSubnetIDs: !Sub '{{resolve:ssm:/${UpstreamStack}/SubnetPrivA:1}}'
         LambdaName: !Ref InspectorLambdaName
+        Environment: !Ref Environment
   PipelineStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub 'https://${SourceBucket}.s3.amazonaws.com/${PipelineName}/pipeline.yml'
       TimeoutInMinutes: 30
       Parameters:        
-        BuilderVPC: !Sub '{{resolve:ssm:/${UpstreamStack}/VPC:1}}'
-        BuilderSecurityGroup: !Sub '{{resolve:ssm:/${UpstreamStack}/DefaultSG:1}}'
-        CodeBuildPublicSubnet: !Sub '{{resolve:ssm:/${UpstreamStack}/SubnetPrivA:1}}'
-        PipelineName: !Ref PipelineName
-        CodeBuildInspectorLambda: !Ref InspectorLambdaName
-        CodeBuildEnvironment: !Ref CodeBuildEnvironment
-        CodeBuildGitRepository: !Ref CodeBuildGitRepository
-        CodeBuildGitBranch: !Ref CodeBuildGitBranch
-        CodeBuildGitRepositoryOwner: !Ref CodeBuildGitRepositoryOwner
-        CodeBuildGitAuthToken: !Ref CodeBuildGitAuthToken
         CodeBuildInspectorTemplate: !Sub '{{resolve:ssm:/${UpstreamStack}/InspectorTemplate:1}}'
         CodeBuildInspectorTarget: !Sub '{{resolve:ssm:/${UpstreamStack}/InspectorTarget:1}}'
         CodeBuildInspectorTopic: !Sub '{{resolve:ssm:/${UpstreamStack}/InspectorTopic:1}}'
+        CodeBuildPublicSubnet: !Sub '{{resolve:ssm:/${UpstreamStack}/SubnetPrivA:1}}'
+        BuilderSecurityGroup: !Sub '{{resolve:ssm:/${UpstreamStack}/DefaultSG:1}}'
+        CodeBuildGitRepositoryOwner: !Ref CodeBuildGitRepositoryOwner
+        BuilderVPC: !Sub '{{resolve:ssm:/${UpstreamStack}/VPC:1}}'
+        CodeBuildGitRepository: !Ref CodeBuildGitRepository
+        CodeBuildInspectorLambda: !Ref InspectorLambdaName
+        CodeStarConnectionARN: !Ref CodeStarConnectionARN
+        CodeBuildEnvironment: !Ref CodeBuildEnvironment
+        CodeBuildGitBranch: !Ref CodeBuildGitBranch
+        UpstreamStack: !Ref UpstreamStack
+        PipelineName: !Ref PipelineName
         Environment: !Ref Environment
         Project: !Ref Project
-        UpstreamStack: !Ref UpstreamStack

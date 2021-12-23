@@ -60,13 +60,15 @@ class InspectorRun():
     def wait_agents(self,session,instances,assessmentTarget):
         inspector = session.client('inspector')
         codepipeline = session.client('codepipeline')
-        max_retries = 5
+        max_retries = 20
         retries = 0
+        print('Wait Agent Instances: ' + str(instances))
         while True:
             healthy = False
             print("looking for inspector agents")
             agents = inspector.preview_agents(
                 previewAgentsArn=assessmentTarget,
+                maxResults = 100
             )
             for agent in agents['agentPreviews']:
                 for instance in instances:
@@ -82,10 +84,11 @@ class InspectorRun():
             time.sleep(5)
             retries = retries + 1
             if retries == max_retries:
+                ec2 = session.client('ec2')
+                ec2.terminate_instances(
+                    InstanceIds=instances)
                 print("max retries suceeded - failing job")
                 codepipeline.put_job_failure_result(jobId=self.job, failureDetails={'type':'JobFailed', 'message': 'max retries for agent to become healthy exceeded'})
-                for instance in instances:
-                    instance.terminate()
                 break
     def get_ami_id(self,session,location):
         ssm = session.client('ssm')

@@ -1,3 +1,6 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EAC GoldenAMI Pipeline Lambda Stack
+
 Parameters:
   SourceBucket:
     Type: String
@@ -6,6 +9,8 @@ Parameters:
   VPCSecurityGroupIDs:
     Type: CommaDelimitedList
   LambdaName:
+    Type: String
+  Environment:
     Type: String
 
 Resources:
@@ -49,7 +54,7 @@ Resources:
         SecurityGroupIds: !Ref 'VPCSecurityGroupIDs'
         SubnetIds: !Ref 'VPCSubnetIDs'
       Description: Lambda for Inspector Execution
-      FunctionName: !Ref LambdaName
+      FunctionName: !Sub "${LambdaName}-${Environment}"
       Handler: InspectorRun.lambda_handler
       MemorySize: 256
       Role: !GetAtt 'InspectorRunExecutionRole.Arn'

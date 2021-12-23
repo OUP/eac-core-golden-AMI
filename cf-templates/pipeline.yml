@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: CodePipeline & CodeBuild Stack
+Description: EAC GoldenAMI CodePipeline Stack
 
 Parameters:
   PipelineName:
@@ -27,6 +27,9 @@ Parameters:
   Environment:
       Type: String
       Description: Name of the Environment
+  CodeStarConnectionARN:
+    Type: String
+    Description: ARN of the CodeStar connection used to connect to GitHub
   CodeBuildGitRepository:
       Type: String
       Description: Git Repository to use
@@ -36,10 +39,6 @@ Parameters:
   CodeBuildGitRepositoryOwner:
       Type: String
       Description: Owner of the git repository
-  CodeBuildGitAuthToken:
-      Type: String
-      Description: Git OAUTH Token
-      NoEcho: True
   CodeBuildInspectorTemplate:
       Type: String
       Description: ARN of Inspector Template
@@ -81,7 +80,6 @@ Metadata:
           - CodeBuildGitRepository
           - CodeBuildGitBranch
           - CodeBuildGitRepositoryOwner
-          - CodeBuildGitAuthToken
       -
         Label:
           Default: "Inspector Configuration"
@@ -104,171 +102,12 @@ Metadata:
 
 
 Resources:
-  # S3 Bucket that CodePipeline will use for it's artifacts
-  BuildArtifactsBucket:
-    Type: "AWS::S3::Bucket"
-
-  # Role that will be used by CloudFormation during deployment
-  CloudFormationRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      Path: /
-      RoleName: !Sub '${Project}-${Environment}-${PipelineName}-CloudformationRole'
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Principal:
-              Service:
-                - "cloudformation.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      Policies:
-        -
-          PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-PipelineAccess'
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              -
-                Effect: "Allow"
-                Action:
-                  - "iam:*"
-                Resource:
-                  - "*"
-              -
-                Effect: "Allow"
-                Action: 
-                  - "ec2:*"
-                Resource:
-                  - "*"
-              -
-                Effect: "Allow"
-                Action:
-                  - "s3:*"
-                Resource:
-                  - "*"
-              -
-                Effect: "Allow"
-                Action: 
-                  - "route53:*"
-                Resource:
-                  - "*"
-
-  # Role that will be used by CodeBuild during executions
-  CodeBuildServiceRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-        Path: '/managed/'
-        ManagedPolicyArns:
-          - 'arn:aws:iam::aws:policy/PowerUserAccess'
-        AssumeRolePolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - 
-                Action: 'sts:AssumeRole'
-                Effect: Allow
-                Principal:
-                  Service:
-                    - codebuild.amazonaws.com
-        Policies:
-            - 
-              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-CodeBuild'
-              PolicyDocument:
-                Version: '2012-10-17'
-                Statement:
-                  - 
-                    Sid: "CodeBuildToCWL"
-                    Effect: Allow
-                    Action:
-                      - 'logs:CreateLogGroup'
-                      - 'logs:CreateLogStream'
-                      - 'logs:PutLogEvents'
-                    Resource:
-                      - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}_build'
-                      - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}_build:*'
-                  - 
-                    Sid: "CodeBuildToS3ArtifactRepo"
-                    Effect: Allow
-                    Action: 
-                      - 's3:GetObject'
-                      - 's3:GetObjectVersion'
-                      - 's3:PutObject'
-                    Resource: !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
-
-  # Role used by CodePipeline during executions
-  PipelineExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-        Path: '/managed/'      
-        AssumeRolePolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - 
-                Action: 'sts:AssumeRole'
-                Effect: Allow
-                Principal:
-                  Service: 
-                    - codepipeline.amazonaws.com
-        Policies:
-            - 
-              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-PassCodebuild'
-              PolicyDocument:
-                Version: '2012-10-17'
-                Statement:
-                    - 
-                      Action: 'iam:PassRole'
-                      Effect: Allow
-                      Resource: !GetAtt CodeBuildServiceRole.Arn
-            -
-              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-PassCloudformation'
-              PolicyDocument:
-                Version: '2012-10-17'
-                Statement:
-                    -
-                      Action: 'iam:PassRole'
-                      Effect: Allow
-                      Resource: !GetAtt CloudFormationRole.Arn
-            -
-              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-S3Policy'
-              PolicyDocument:
-                Version: '2012-10-17'
-                Statement:
-                    - 
-                      Action:
-                        - 's3:GetObject'
-                        - 's3:GetObjectVersion'
-                        - 's3:GetBucketVersioning'
-                        - 's3:PutObject'
-                      Effect: Allow
-                      Resource: 
-                        - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}'
-                        - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
-            -
-              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-BuildPolicy'
-              PolicyDocument:
-                Version: '2012-10-17'
-                Statement:
-                    - 
-                      Action:
-                        - 'codebuild:StartBuild'
-                        - 'codebuild:StopBuild'
-                        - 'codebuild:BatchGetBuilds'
-                        - 'cloudformation:DescribeStacks'
-                        - 'cloudformation:DescribeChangeSet'
-                        - 'cloudformation:CreateChangeSet'
-                        - 'cloudformation:ExecuteChangeSet'
-                        - 'cloudformation:DeleteChangeSet'
-                        - 'lambda:InvokeFunction'
-                        - 'sns:Publish'
-                      Effect: Allow
-                      Resource: '*'
 
   # CodeBuild project that builds/configures the AMI
   AMIBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub '${PipelineName}_amibuild'
+      Name: !Sub '${PipelineName}_${Environment}_amibuild'
       Artifacts:
         Type: CODEPIPELINE
       Environment: 
@@ -304,7 +143,7 @@ Resources:
   AMIDeploy:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub '${PipelineName}_amideploy'
+      Name: !Sub '${PipelineName}_${Environment}_amideploy'
       Artifacts:
         Type: CODEPIPELINE
       Environment: 
@@ -336,6 +175,9 @@ Resources:
         Type: CODEPIPELINE
         BuildSpec: buildspec_deploy.yml
 
+  # S3 Bucket that CodePipeline will use for it's artifacts
+  BuildArtifactsBucket:
+    Type: "AWS::S3::Bucket"
 
   GoldenAMIPipeline:
     Type: "AWS::CodePipeline::Pipeline"
@@ -343,7 +185,7 @@ Resources:
       ArtifactStore:
         Location: !Ref BuildArtifactsBucket
         Type: S3
-      Name: !Ref PipelineName
+      Name: !Sub '${PipelineName}-${Environment}'
       RoleArn: !GetAtt PipelineExecutionRole.Arn
       Stages:
         -
@@ -353,15 +195,15 @@ Resources:
               Name: GitHubRepo
               ActionTypeId:
                 Category: Source
-                Owner: "ThirdParty"
-                Provider: "GitHub"
+                Owner: AWS
+                Provider: CodeStarSourceConnection
                 Version: '1'
               Configuration:
-                Owner: !Ref CodeBuildGitRepositoryOwner
-                Repo: !Ref CodeBuildGitRepository
-                Branch: !Ref CodeBuildGitBranch
-                OAuthToken: !Ref CodeBuildGitAuthToken
-                PollForSourceChanges: true
+                ConnectionArn: !Ref CodeStarConnectionARN
+                FullRepositoryId: !Sub '${CodeBuildGitRepositoryOwner}/${CodeBuildGitRepository}'
+                BranchName: !Ref CodeBuildGitBranch
+                OutputArtifactFormat: "CODE_ZIP"
+                DetectChanges: True
               OutputArtifacts:
                 - Name: SourceZip
               RunOrder: 1
@@ -396,10 +238,10 @@ Resources:
                 UserParameters: !Sub |
                   {
                     "amiIdLocation": "/${UpstreamStack}/${Environment}/InspectorPrecheckAMI-${PipelineName}",
-                    "subnet": "${CodeBuildPublicSubnet}",
                     "assessmentTemplate": "${CodeBuildInspectorTemplate}",
                     "assessmentTarget": "${CodeBuildInspectorTarget}",
-                    "assessmentTopic": "${CodeBuildInspectorTopic}"
+                    "assessmentTopic": "${CodeBuildInspectorTopic}",
+                    "subnet": "${CodeBuildPublicSubnet}"
                   }
         - 
           Name: Deploy
@@ -417,3 +259,117 @@ Resources:
                 - Name: BuiltZip
               OutputArtifacts:
                 - Name: DeployZip
+
+  # Role that will be used by CodeBuild during executions
+  CodeBuildServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+        Path: '/managed/'
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/PowerUserAccess'
+        AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - 
+                Action: 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service:
+                    - codebuild.amazonaws.com
+        Policies:
+            - 
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-CodeBuild'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - 
+                    Sid: "CodeBuildToCWL"
+                    Effect: Allow
+                    Action:
+                      - 'logs:CreateLogStream'
+                      - 'logs:CreateLogGroup'
+                      - 'logs:PutLogEvents'
+                    Resource:
+                      - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}_build'
+                      - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${PipelineName}_build:*'
+                  - 
+                    Sid: "CodeBuildToS3ArtifactRepo"
+                    Effect: Allow
+                    Action: 
+                      - 's3:GetObjectVersion'
+                      - 's3:GetObject'
+                      - 's3:PutObject'
+                    Resource: !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
+
+  # Role used by CodePipeline during executions
+  PipelineExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+        Path: '/managed/'      
+        AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - 
+                Action: 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service: 
+                    - codepipeline.amazonaws.com
+        Policies:
+            - 
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-PassCodebuild'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - 
+                      Action: 'iam:PassRole'
+                      Effect: Allow
+                      Resource: !GetAtt CodeBuildServiceRole.Arn
+            -
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-S3Policy'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - 
+                      Action:
+                        - 's3:GetBucketVersioning'
+                        - 's3:DeleteBucketPolicy'
+                        - 's3:GetObjectVersion'
+                        - "s3:PutObjectAcl"
+                        - 's3:PutObject'
+                        - 's3:GetObject'
+                      Effect: Allow
+                      Resource: 
+                        - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}'
+                        - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
+            -
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-CodeStarPolicy'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - 
+                      Action:
+                        - 'codestar-connections:UseConnection'
+                      Effect: Allow
+                      Resource: 
+                        - !Ref CodeStarConnectionARN
+                      Condition: {"ForAllValues:StringEquals": {"codestar-connections:PassedToService": "codepipeline.amazonaws.com"}}
+            -
+              PolicyName: !Sub '${Project}-${Environment}-${PipelineName}-BuildPolicy'
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - 
+                      Action:
+                        - 'cloudformation:DescribeChangeSet'
+                        - 'cloudformation:ExecuteChangeSet'
+                        - 'cloudformation:DeleteChangeSet'
+                        - 'cloudformation:CreateChangeSet'
+                        - 'cloudformation:DescribeStacks'
+                        - 'codebuild:BatchGetBuilds'
+                        - 'lambda:InvokeFunction'
+                        - 'codebuild:StartBuild'
+                        - 'codebuild:StopBuild'
+                        - 'sns:Publish'
+                      Effect: Allow
+                      Resource: '*'
