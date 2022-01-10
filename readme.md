@@ -16,7 +16,7 @@ Below is a brief overview of the pipeline, it's stages and how it interacts with
 - Scan Stage
     - This stage runs a lambda function with the `ami-build/lambdas/InspectorRun.py` code to perform an AWS Inspector Security Assessment
     - It does this by taking the AMI ID published in the previous stage, creating an instance from it, performing an Inspector assessment & outputting the report via SNS
-        - Note: The report is sent to an SNS topic which triggers a second lambda already created, which formats it, and then sends it to another topic which sends it via email
+        - Note: The report is sent to an SNS topic which triggers a second lambda already created for processing, see `ami-build/lambdas/readme.md` for more detailed info
 - Deploy Stage
     - This stage uses CodeBuild with the `buildspec_deploy.yml` file to perform a final deploy of the AMI ID
     - It takes the AMI ID from the Build Stage and publishes it to a final SSM Parameter as well as publishing an event to EventBridge when complete
