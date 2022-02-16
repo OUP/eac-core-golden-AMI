@@ -6,7 +6,7 @@
     "CodeBuildEnvironment": "amazonlinux2-x86_64-standard:2.0",
     "CodeBuildGitRepositoryOwner": "OUP",
     "CodeBuildGitRepository": "eac-core-golden-AMI",
-    "CodeStarConnectionARN": "arn:aws:codestar-connections:eu-west-1:637927391752:connection/613f3f2e-9218-4d9c-a03f-49748e88700b",
+    "CodeStarConnectionARN": "arn:aws:codestar-connections:eu-west-1:637927391752:connection/2a9a160b-2822-4177-bf57-5f473ff3788a",
     "CodeBuildGitBranch": "infra",
     "PipelineName": "eac-core-golden-ami",
     "InspectorLambdaName": "AmazonInspectorRun",
