@@ -74,7 +74,7 @@
     },
     {
       "inline": [
-        "echo 'Starting Flexera install:'"
+        "echo 'Starting Flexera install ...'"
       ],
       "type": "shell"
     },
@@ -85,13 +85,13 @@
       "type": "shell"
     },
     {
-      "destination": "/home/ec2-user/Flexera", 
+      "destination": "/home/ec2-user/Flexera/", 
       "source": "/tmp/Flexera",
       "type": "file"
     },
     {
       "inline": [
-        "sudo cp -pv mgsft_rollout_cert mgsft_rollout_response /var/tmp && sudo mv -v /home/ec2-user/Flexera/managesoft-17.0.2-1.x86_64.rpm /home/ec2-user/Flexera/Linux/ && sudo mv -v /home/ec2-user/Flexera/mgssetup.ini /home/ec2-user/Flexera/Linux/ && sudo cd /home/ec2-user/Flexera/Linux && sudo rpm --upgrade --oldpackage --verbose managesoft-17.0.2-1.x86_64.rpm"
+        "sudo cp -pv /home/ec2-user/Flexera/mgsft_rollout_cert mgsft_rollout_response /var/tmp && sudo mv -v /home/ec2-user/Flexera/managesoft-17.0.2-1.x86_64.rpm /home/ec2-user/Flexera/Linux/ && sudo mv -v /home/ec2-user/Flexera/mgssetup.ini /home/ec2-user/Flexera/Linux/ && sudo rpm --upgrade --oldpackage --verbose /home/ec2-user/Flexera/Linux/managesoft-17.0.2-1.x86_64.rpm"
       ],
       "type": "shell"
     },

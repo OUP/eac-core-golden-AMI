@@ -12,7 +12,7 @@ phases:
       - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/mgsft_rollout_cert /tmp/Flexera
       - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/mgsft_rollout_response /tmp/Flexera
       - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/Linux/mgssetup.ini /tmp/Flexera 
-      - echo "Installing Packer"
+      - echo "Installing Packer ..."
       - curl -o packer.zip https://releases.hashicorp.com/packer/1.4.0/packer_1.4.0_linux_amd64.zip && unzip packer.zip
       - echo "Validating Packer template ..."
       - ./packer validate packer.json
