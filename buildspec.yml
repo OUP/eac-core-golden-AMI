@@ -4,14 +4,16 @@ phases:
   pre_build:
     commands:
       - cd 'ami-build'
+      - pwd
       - echo "Installing Tomcat Files ..."
       - curl -o tomcat.zip https://downloads.apache.org/tomcat/tomcat-9/v9.0.58/bin/apache-tomcat-9.0.58.zip && unzip tomcat.zip
       - mv apache-tomcat-9.0.58 /tmp/tomcat9 && chmod +x /tmp/tomcat9/bin/*.sh
       - echo "Installing Flexera files from S3 ..."
-      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/managesoft-17.0.2-1.x86_64.rpm /tmp/Flexera 
-      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/mgsft_rollout_cert /tmp/Flexera
-      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/mgsft_rollout_response /tmp/Flexera
-      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/Linux/mgssetup.ini /tmp/Flexera 
+      - cd /tmp/Flexera
+      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/managesoft-17.0.2-1.x86_64.rpm ./
+      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/mgsft_rollout_cert ./
+      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/mgsft_rollout_response ./
+      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/Linux/mgssetup.ini ./
       - ls -la /tmp/Flexera
       - ls -la /tmp/Flexera/Flexera | exit 1
       - echo "Installing Packer ..."
