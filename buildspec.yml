@@ -3,6 +3,7 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/managesoft-17.0.2-1.x86_64.rpm ./ 
       - cd 'ami-build'
       - echo "Installing Tomcat Files"
       - curl -o tomcat.zip https://downloads.apache.org/tomcat/tomcat-9/v9.0.58/bin/apache-tomcat-9.0.58.zip && unzip tomcat.zip
