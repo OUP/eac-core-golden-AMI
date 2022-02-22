@@ -80,7 +80,7 @@
     },
     {
       "inline": [
-        "sudo mkdir -p /home/ec2-user/Flexera/Linux && sudo chmod 775 /home/ec2-user/Flexera/Linux && ls -al /home/ec2-user/Flexera"
+        "mkdir -p /home/ec2-user/Flexera/Linux && chmod 755 /home/ec2-user/Flexera/Linux && ls -al /home/ec2-user/Flexera"
       ],
       "type": "shell"
     },
