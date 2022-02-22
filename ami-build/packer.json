@@ -85,7 +85,7 @@
       "type": "shell"
     },
     {
-      "destination": "/home/ec2-user/Flexera/", 
+      "destination": "/home/ec2-user/Flexera", 
       "source": "/tmp/Flexera",
       "type": "file"
     },
