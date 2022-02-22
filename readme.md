@@ -1,14 +1,14 @@
 # Warning
-This is the `infra` branch of this repository. The readme for this branch as been written for the infra environment, if you are working on a different environment, please switch to the correct branch for your retrospective environment.
+This is the `infra` branch of this repository. The readme for this branch as been written for the infra environment, if you are working on a different environment, please switch to the correct branch for your respective environment.
 
 # Overview
 This repository contains the files & templates that will create a GoldenAMI creation CodePipeline created for OUP EAC, this is part of a two-pipeline deployment process. This pipeline will take a standard Amazon Linux 2 AMI, install software, perform security updates and run an Amazon Inspector Security assessment before finally publishing the AMI ID to AWS SSM Parameter Store.
 
 # Pipeline Walkthrough
-Below is a brief overview of the pipeline, it's stages and how it interacts with all the files contained inside this repository.
+Below is a brief overview of the pipeline, its stages and how it interacts with all the files contained inside this repository.
 
 - Source Stage
-    - This stage looks to this GitHub repository and will automatically trigger the pipeline upon any commits to the retrospective environment branches
+    - This stage looks to this GitHub repository and will automatically trigger the pipeline upon any commits to the respective environment branches
 - Build Stage
     - This stage uses CodeBuild with the `buildspec.yml` file to install and build Apache Tomcat & Packer
     - It will then validate and run the `ami-build/packer.json` file which will create an AMI with security updates installed & the built Apache Tomcat, Java 8 installed
@@ -26,7 +26,7 @@ Below is a brief overview of the pipeline, it's stages and how it interacts with
 # Pipeline Update Procedure
 
 ## Pipeline files/config update
-If any of the pipeline configuration files have been updated, including the buildspec's or the packer files commit the changes to the retrospective environment branch and the pipeline will automatically trigger and run with the updated configs.
+If any of the pipeline configuration files have been updated, including the buildspecs or the packer files commit the changes to the retrospective environment branch and the pipeline will automatically trigger and run with the updated configs.
 
 ## CloudFormation Stack Update
 Please follow the below instructions prior to a CloudFormation Stack update of an already deployed version of this pipeline.

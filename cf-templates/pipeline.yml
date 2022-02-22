@@ -175,10 +175,11 @@ Resources:
         Type: CODEPIPELINE
         BuildSpec: buildspec_deploy.yml
 
-  # S3 Bucket that CodePipeline will use for it's artifacts
+  # S3 Bucket that CodePipeline will use for its artifacts
   BuildArtifactsBucket:
     Type: "AWS::S3::Bucket"
 
+  # Main CodePipeline
   GoldenAMIPipeline:
     Type: "AWS::CodePipeline::Pipeline"
     Properties:
@@ -203,7 +204,7 @@ Resources:
                 FullRepositoryId: !Sub '${CodeBuildGitRepositoryOwner}/${CodeBuildGitRepository}'
                 BranchName: !Ref CodeBuildGitBranch
                 OutputArtifactFormat: "CODE_ZIP"
-                DetectChanges: True
+                DetectChanges: False
               OutputArtifacts:
                 - Name: SourceZip
               RunOrder: 1
