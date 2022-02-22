@@ -11,7 +11,7 @@ phases:
       - aws s3 cp s3://sept2021-flexeraproject-installationfiles/flexera/Linux-FNMS-Agent-RHEL-CentOS-64-Bit/Linux/mgssetup.ini ./
       - ls -la /tmp/Flexera
       - ls -la /tmp/Flexera/Flexera | exit 1
-      - cd ${CODEBUILD_HOME}/ami-build
+      - cd ${CODEBUILD_SRC_DIR}/ami-build
       - echo "Installing Tomcat Files ..."
       - curl -o tomcat.zip https://downloads.apache.org/tomcat/tomcat-9/v9.0.58/bin/apache-tomcat-9.0.58.zip && unzip tomcat.zip
       - mv apache-tomcat-9.0.58 /tmp/tomcat9 && chmod +x /tmp/tomcat9/bin/*.sh
